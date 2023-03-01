@@ -129,7 +129,7 @@ abstract class MqttConnectionHandlerBase implements MqttIConnectionHandler {
     autoReconnectInProgress = true;
     // If the auto reconnect callback is set call it
     if (onAutoReconnect != null) {
-      onAutoReconnect!();
+      await onAutoReconnect!();
     }
 
     // If we are connected disconnect from the broker.
@@ -154,7 +154,7 @@ abstract class MqttConnectionHandlerBase implements MqttIConnectionHandler {
           'MqttConnectionHandlerBase::autoReconnect - auto reconnect complete');
       // If the auto reconnect callback is set call it
       if (onAutoReconnected != null) {
-        onAutoReconnected!();
+        await onAutoReconnected!();
       }
     } else {
       MqttLogger.log(

@@ -14,10 +14,10 @@ typedef DisconnectCallback = void Function();
 typedef ConnectCallback = void Function();
 
 /// The client auto reconnect callback type
-typedef AutoReconnectCallback = void Function();
+typedef AutoReconnectCallback = Future<void> Function();
 
 /// The client auto reconnect complete callback type
-typedef AutoReconnectCompleteCallback = void Function();
+typedef AutoReconnectCompleteCallback = Future<void> Function();
 
 /// A client class for interacting with MQTT Data Packets.
 /// Do not instantiate this class directly, instead instantiate
