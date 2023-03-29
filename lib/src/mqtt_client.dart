@@ -348,6 +348,11 @@ class MqttClient {
   /// confirmed subscriptions.
   void resubscribe() => subscriptionsManager!.resubscribe();
 
+  /// 清空订阅
+  void clearSubscribes() {
+    subscriptionsManager!.subscriptions.clear();
+  }
+
   /// Publishes a message to the message broker.
   /// Returns the message identifer assigned to the message.
   /// Raises InvalidTopicException if the topic supplied violates the
