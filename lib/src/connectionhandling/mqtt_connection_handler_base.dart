@@ -163,9 +163,11 @@ abstract class MqttConnectionHandlerBase implements MqttIConnectionHandler {
       if (onAutoReconnectRetry != null) {
         await onAutoReconnectRetry!();
       }
-      MqttLogger.log(
-          'MqttConnectionHandlerBase::autoReconnect - auto reconnect failed - re trying');
-      clientEventBus!.fire(MqttAutoReconnect());
+      if (connectionStatus.state != MqttConnectionState.connected) {
+        MqttLogger.log(
+            'MqttConnectionHandlerBase::autoReconnect - auto reconnect failed - re trying');
+        clientEventBus!.fire(MqttAutoReconnect());
+      }
     }
   }
 
