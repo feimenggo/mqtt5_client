@@ -353,6 +353,7 @@ class MqttClient {
   /// 清空订阅
   void clearSubscribes() {
     subscriptionsManager!.subscriptions.clear();
+    subscriptionsManager!.pendingSubscriptions.clear();
   }
 
   /// Publishes a message to the message broker.
