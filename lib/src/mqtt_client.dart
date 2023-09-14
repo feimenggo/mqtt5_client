@@ -157,6 +157,7 @@ class MqttClient {
   /// be called before auto reconnect processing is invoked to allow the user to
   /// perform any pre auto reconnect actions.
   AutoReconnectCallback? onAutoReconnect;
+  AutoReconnectCallback? onAutoReconnectRetry;
 
   /// Auto reconnected callback, if auto reconnect is selected this callback will
   /// be called after auto reconnect processing is completed to allow the user to
@@ -242,6 +243,7 @@ class MqttClient {
     connectionHandler.onDisconnected = internalDisconnect;
     connectionHandler.onConnected = onConnected;
     connectionHandler.onAutoReconnect = onAutoReconnect;
+    connectionHandler.onAutoReconnectRetry = onAutoReconnectRetry;
     connectionHandler.onAutoReconnected = onAutoReconnected;
     publishingManager =
         MqttPublishingManager(connectionHandler, clientEventBus);

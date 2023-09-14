@@ -26,6 +26,9 @@ abstract class MqttConnectionHandlerBase implements MqttIConnectionHandler {
   @override
   AutoReconnectCallback? onAutoReconnect;
 
+  /// Auto reconnect retry callback
+  AutoReconnectCallback? onAutoReconnectRetry;
+
   /// Auto reconnected callback
   @override
   AutoReconnectCompleteCallback? onAutoReconnected;
@@ -157,6 +160,9 @@ abstract class MqttConnectionHandlerBase implements MqttIConnectionHandler {
         await onAutoReconnected!();
       }
     } else {
+      if (onAutoReconnectRetry != null) {
+        await onAutoReconnectRetry!();
+      }
       MqttLogger.log(
           'MqttConnectionHandlerBase::autoReconnect - auto reconnect failed - re trying');
       clientEventBus!.fire(MqttAutoReconnect());
