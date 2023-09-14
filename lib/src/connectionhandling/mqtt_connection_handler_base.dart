@@ -161,7 +161,10 @@ abstract class MqttConnectionHandlerBase implements MqttIConnectionHandler {
       }
     } else {
       if (onAutoReconnectRetry != null) {
+        if (_retrying) return;
+        _retrying = true;
         await onAutoReconnectRetry!();
+        _retrying = false;
       }
       if (connectionStatus.state != MqttConnectionState.connected) {
         MqttLogger.log(
@@ -170,6 +173,8 @@ abstract class MqttConnectionHandlerBase implements MqttIConnectionHandler {
       }
     }
   }
+
+  bool _retrying = false;
 
   /// Sends a message to the broker through the current connection.
   @override
