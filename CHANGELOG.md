@@ -1,3 +1,12 @@
+# 4.2.2
+Issue 87
+
+# 4.2.1
+Issue 85
+
+# 4.2.0
+Issue 77 + tags and screenshots
+
 # 4.1.0
 PR 81
 
