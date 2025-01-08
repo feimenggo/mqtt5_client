@@ -6,6 +6,7 @@
  */
 
 @TestOn('vm')
+library;
 
 import 'package:mqtt5_client/mqtt5_client.dart';
 import 'package:mqtt5_client/mqtt5_server_client.dart';
@@ -22,6 +23,7 @@ void main() {
   test('Connected - Broker Disconnects Stays Inactive', () async {
     var autoReconnectCallbackCalled = false;
     var disconnectCallbackCalled = false;
+    var connectionFailedCallbackCalled = false;
 
     void messageHandlerConnect(typed.Uint8Buffer? messageArrived) {
       final ack = MqttConnectAckMessage();
@@ -36,6 +38,10 @@ void main() {
       disconnectCallbackCalled = true;
     }
 
+    void connectionFailed(int attempt) {
+      connectionFailedCallbackCalled = true;
+    }
+
     broker.setMessageHandler = messageHandlerConnect;
     await broker.start();
     final client = MqttServerClient(mockBrokerAddress, testClientId);
@@ -43,6 +49,7 @@ void main() {
     client.autoReconnect = true;
     client.onAutoReconnect = autoReconnect;
     client.onDisconnected = disconnect;
+    client.onFailedConnectionAttempt = connectionFailed;
     const username = 'unused 4';
     print(username);
     const password = 'password 4';
@@ -55,6 +62,7 @@ void main() {
     await MqttUtilities.asyncSleep(60);
     expect(autoReconnectCallbackCalled, isTrue);
     expect(disconnectCallbackCalled, isFalse);
+    expect(connectionFailedCallbackCalled, isFalse);
     expect(client.connectionStatus!.state == MqttConnectionState.connecting,
         isTrue);
     broker.close();

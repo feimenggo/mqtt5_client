@@ -8,7 +8,7 @@
 part of '../../../mqtt5_browser_client.dart';
 
 /// The MQTT browser connection base class
-class MqttBrowserConnection extends MqttConnectionBase {
+abstract class MqttBrowserConnection extends MqttConnectionBase {
   /// Default constructor
   MqttBrowserConnection(super.clientEventBus);
 
@@ -17,6 +17,11 @@ class MqttBrowserConnection extends MqttConnectionBase {
       : super(clientEventBus) {
     connect(server, port);
   }
+
+  /// The socket that maintains the connection to the MQTT broker.
+  /// Get and set methods preserve type information.
+  WebSocket get wsClient => (client as WebSocket);
+  set(WebSocket ws) => client = ws;
 
   /// Connect, must be overridden in connection classes
   @override
@@ -36,29 +41,29 @@ class MqttBrowserConnection extends MqttConnectionBase {
   void _startListening() {
     MqttLogger.log('MqttBrowserConnection::_startListening');
     try {
-      client.onClose.listen((e) {
-        MqttLogger.log(
-            'MqttBrowserConnection::_startListening - websocket is closed');
-        onDone();
-      });
-      client.onMessage.listen((MessageEvent e) {
-        _onData(e.data);
-      });
-      client.onError.listen((e) {
-        MqttLogger.log(
-            'MqttBrowserConnection::_startListening - websocket has errored');
-        onError(e);
-      });
+      onListen();
     } on Exception catch (e) {
       MqttLogger.log(
           'MqttBrowserConnection::_startListening - exception raised $e');
     }
   }
 
+  /// Implement stream subscription
+  List<StreamSubscription> onListen();
+
   /// OnData listener callback
-  void _onData(dynamic byteData) {
+  void onData(dynamic byteData) {
     MqttLogger.log(
         'MqttBrowserConnection::_onData - Message Received Started <<< ');
+
+    // Normally the byteData is a ByteBuffer,
+    // but for SKWasm / WASM, the byteData is a JSArrayBuffer,
+    // so we need to convert it to a Dart ByteBuffer
+    // before we convert it to a Uint8List.
+    // ignore: invalid_runtime_check_with_js_interop_types
+    if (byteData is JSArrayBuffer) {
+      byteData = byteData.toDart;
+    }
     // Protect against 0 bytes but should never happen.
     var data = Uint8List.view(byteData);
     if (data.isEmpty) {
@@ -96,17 +101,22 @@ class MqttBrowserConnection extends MqttConnectionBase {
             'MqttBrowserConnection::_onData - MESSAGE RECEIVED -> ', msg);
         // If we have received a valid message we must shrink the stream
         messageStream.shrink();
-        if (!clientEventBus!.streamController.isClosed) {
-          if (msg!.header!.messageType == MqttMessageType.connectAck) {
-            clientEventBus!.fire(MqttConnectAckMessageAvailable(msg));
+        if (clientEventBus != null) {
+          if (!clientEventBus!.streamController.isClosed) {
+            if (msg!.header!.messageType == MqttMessageType.connectAck) {
+              clientEventBus!.fire(MqttConnectAckMessageAvailable(msg));
+            } else {
+              clientEventBus!.fire(MqttMessageAvailable(msg));
+            }
+            MqttLogger.log(
+                'MqttBrowserConnection::_onData - message available event fired');
           } else {
-            clientEventBus!.fire(MqttMessageAvailable(msg));
+            MqttLogger.log(
+                'MqttBrowserConnection::_onData - message not processed, event bus is closed');
           }
-          MqttLogger.log(
-              'MqttBrowserConnection::_onData - message available event fired');
         } else {
           MqttLogger.log(
-              'MqttBrowserConnection::_onData - message not processed, disconnecting');
+              'MqttBrowserConnection::_onData - message not processed, event bus is null');
         }
       }
     }
@@ -119,14 +129,11 @@ class MqttBrowserConnection extends MqttConnectionBase {
     final messageBytes = message.read(message.length);
     var buffer = messageBytes.buffer;
     var bData = ByteData.view(buffer);
-    client?.sendTypedData(bData);
+    wsClient.send(bData.jsify()!);
   }
 
   void _disconnect() {
-    if (client != null) {
-      client.close();
-      client = null;
-    }
+    wsClient.close();
   }
 
   /// OnDone listener callback

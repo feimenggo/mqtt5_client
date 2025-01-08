@@ -6,6 +6,7 @@
  */
 
 @TestOn('vm')
+library;
 
 import 'package:mqtt5_client/mqtt5_client.dart';
 import 'package:test/test.dart';
