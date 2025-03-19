@@ -1237,8 +1237,8 @@ void main() {
         expect(message1.authenticationMethod, isNull);
         expect(message.authenticationData, isNull);
         expect(message1.authenticationData, isNull);
-        expect(message.getWriteLength(), 0);
-        expect(message1.getWriteLength(), 0);
+        expect(message.getWriteLength(), 2);
+        expect(message1.getWriteLength(), 2);
       });
       test('Variable Header Connect Ack - All', () {
         final buffer = typed.Uint8Buffer();
@@ -1343,7 +1343,7 @@ void main() {
         expect(message.serverReference, 'Server Reference');
         expect(message.authenticationMethod, 'Authentication Method');
         expect(message.authenticationData!.toList(), [1, 2, 3, 4]);
-        expect(message.getWriteLength(), 0);
+        expect(message.getWriteLength(), 192);
       });
     });
     group('Publish Message', () {
@@ -2817,8 +2817,9 @@ void main() {
         payload.password = 'Password';
         payload.willProperties.contentType = 'Content Type';
         payload.willProperties.willDelayInterval = 0xFF;
+        payload.willTopic = 'willtopic';
         payload.variableHeader!.connectFlags.willRetain = true;
-        expect(payload.getWriteLength(), 40);
+        expect(payload.getWriteLength(), 53);
         final buffer = typed.Uint8Buffer();
         final stream = MqttByteBuffer(buffer);
         payload.writeTo(stream);
@@ -2862,7 +2863,20 @@ void main() {
           0,
           0,
           0,
-          255
+          255,
+          0,
+          9,
+          119,
+          105,
+          108,
+          108,
+          116,
+          111,
+          112,
+          105,
+          99,
+          0,
+          0
         ]);
       });
     });
@@ -3015,7 +3029,7 @@ void main() {
             .withWillTopic('willTopic');
         final mb = MessageSerializationHelper.getMessageBytes(msg);
         expect(mb[0], 0x10);
-        expect(mb[1], 0x1D);
+        expect(mb[1], 0x1F);
       });
       test('User properties', () {
         final userProp = MqttUserProperty();
@@ -3657,6 +3671,27 @@ void main() {
 
         final decodedMsg = MqttMessage.createFrom(byteBuffer);
         expect(decodedMsg!.header!.messageType, MqttMessageType.publish);
+      });
+      test('Publish Chinese payload', () {
+        const topic = 'smartDevices';
+        final builder = MqttPayloadBuilder();
+        builder.addUTF8String('你好大衛');
+        final msg = MqttPublishMessage()
+            .toTopic(topic)
+            .withMessageIdentifier(1)
+            .withQos(MqttQos.atMostOnce)
+            .publishData(builder.payload!);
+        expect(msg.variableHeader!.topicName, topic);
+        final buffer = typed.Uint8Buffer();
+        final byteBuffer = MqttByteBuffer(buffer);
+        msg.writeTo(byteBuffer);
+        byteBuffer.reset();
+
+        final decodedMsg = MqttMessage.createFrom(byteBuffer);
+        expect(decodedMsg!.header!.messageType, MqttMessageType.publish);
+        final data = MqttUtilities.bytesToStringAsString(
+            (decodedMsg as MqttPublishMessage).payload.message!);
+        expect(data, '你好大衛');
       });
     });
 

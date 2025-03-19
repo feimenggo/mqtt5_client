@@ -1,5 +1,20 @@
+# 4.11.0
+Issue 139
+
+# 4.10.0
+Issue 143 - *** Disconnect message received from the broker will now disconnect the client ***
+
+# 4.9.2
+Issue 134 - Will API documentation update
+
+# 4.9.1
+Issue 140
+
+# 4.9.0
+Issue 136
+
 # 4.8.0
-Issue 134
+Issue 134 - Disconnect Message
 
 # 4.7.0
 PR133, Issue 132
