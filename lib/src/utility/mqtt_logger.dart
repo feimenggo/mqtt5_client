@@ -1,3 +1,5 @@
+// ignore_for_file: avoid-global-state
+
 /*
  * Package : mqtt5_client
  * Author : S. Hamblett <steve.hamblett@linux.com>
@@ -18,6 +20,9 @@ class MqttLogger {
   /// Test mode
   static bool testMode = false;
 
+  /// Log publish message payload data
+  static bool logPayloads = true;
+
   /// Log
   ///
   /// If the optimise parameter is supplied it must have a toString method,
@@ -27,15 +32,13 @@ class MqttLogger {
     if (loggingOn) {
       final now = DateTime.now();
       var output = '';
-      if (optimise is bool) {
-        output = '$now -- $message';
-        print(output);
-      } else {
-        output = '$now -- $message$optimise';
-        print(output);
-      }
+      output = optimise is bool
+          ? '$now -- $message'
+          : '$now -- $message$optimise';
       if (testMode) {
         testOutput = output;
+      } else {
+        print(output);
       }
     }
   }

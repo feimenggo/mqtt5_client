@@ -79,7 +79,8 @@ Future<int> main() async {
   } else {
     /// Use status here rather than state if you also want the broker return code.
     print(
-        'EXAMPLE::ERROR Mosquitto client connection failed - disconnecting, status is ${client.connectionStatus}');
+      'EXAMPLE::ERROR Mosquitto client connection failed - disconnecting, status is ${client.connectionStatus}',
+    );
     client.disconnect();
     return -1;
   }
@@ -101,7 +102,8 @@ Future<int> main() async {
     /// for a while.
     /// The payload is a byte buffer, this will be specific to the topic
     print(
-        'EXAMPLE::Change notification:: topic is <${c[0].topic}>, payload is <-- $pt -->');
+      'EXAMPLE::Change notification:: topic is <${c[0].topic}>, payload is <-- $pt -->',
+    );
     print('');
   });
 
@@ -110,7 +112,8 @@ Future<int> main() async {
   /// publishing handshake with the broker.
   client.published!.listen((MqttPublishMessage message) {
     print(
-        'EXAMPLE::Published notification:: topic is ${message.variableHeader!.topicName}, with Qos ${message.header!.qos}');
+      'EXAMPLE::Published notification:: topic is ${message.variableHeader!.topicName}, with Qos ${message.header!.qos}',
+    );
   });
 
   /// Lets publish to our topic
@@ -131,7 +134,7 @@ Future<int> main() async {
   /// Ok, we will now sleep a while, in this gap you will see ping request/response
   /// messages being exchanged by the keep alive mechanism.
   print('EXAMPLE::Sleeping....');
-  await MqttUtilities.asyncSleep(120);
+  await MqttUtilities.asyncSleep(20);
 
   /// Finally, unsubscribe and exit gracefully
   print('EXAMPLE::Unsubscribing');
@@ -147,7 +150,8 @@ Future<int> main() async {
 /// The subscribed callback
 void onSubscribed(MqttSubscription subscription) {
   print(
-      'EXAMPLE::Subscription confirmed for topic ${subscription.topic.rawTopic}');
+    'EXAMPLE::Subscription confirmed for topic ${subscription.topic.rawTopic}',
+  );
 }
 
 /// The unsolicited disconnect callback
@@ -162,7 +166,8 @@ void onDisconnected() {
 /// The successful connect callback
 void onConnected() {
   print(
-      'EXAMPLE::OnConnected client callback - Client connection was sucessful');
+    'EXAMPLE::OnConnected client callback - Client connection was sucessful',
+  );
 }
 
 /// Pong callback

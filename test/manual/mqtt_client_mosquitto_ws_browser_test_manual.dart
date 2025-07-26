@@ -43,14 +43,17 @@ void main() {
       client.connectionMessage = connMess;
       var ok = true;
       try {
+        expect(MqttEnvironment.isWebClient, isFalse);
         await client.connect();
+        expect(MqttEnvironment.isWebClient, isTrue);
         var connectionOK = false;
         if (client.connectionStatus!.state == MqttConnectionState.connected) {
           print('Browser client connected locally');
           connectionOK = true;
         } else {
           print(
-              'Browser client connection failed - disconnecting, status is ${client.connectionStatus}');
+            'Browser client connection failed - disconnecting, status is ${client.connectionStatus}',
+          );
           client.disconnect();
         }
         await sleeper.sleep();
@@ -62,7 +65,8 @@ void main() {
         }
       } on MqttNoConnectionException {
         print(
-            '>>>>> TEST NOT OK - No connection exception thrown, cannot connect to Mosquitto');
+          '>>>>> TEST NOT OK - No connection exception thrown, cannot connect to Mosquitto',
+        );
         ok = false;
       }
       expect(ok, isTrue);

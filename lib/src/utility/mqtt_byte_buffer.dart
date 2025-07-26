@@ -11,20 +11,19 @@ part of '../../mqtt5_client.dart';
 /// This class is in effect a cut-down implementation of the C# NET
 /// System.IO class with Mqtt client specific extensions.
 class MqttByteBuffer {
-  /// The byte buffer
-  MqttByteBuffer(this.buffer);
+  static const int byteLength = 8;
+  static const int byteMask = 0xFF;
 
-  /// From a list
-  MqttByteBuffer.fromList(List<int> data) {
-    buffer = typed.Uint8Buffer();
-    buffer!.addAll(data);
-  }
-
-  /// The current position within the buffer.
-  int _position = 0;
+  /// Large payload handling.
+  /// If count of bytes to read for a payload is larger than this then
+  /// large payload handling is invoked.
+  static const largePayload = 32767;
 
   /// The underlying byte buffer
   typed.Uint8Buffer? buffer;
+
+  /// The current position within the buffer.
+  int _position = 0;
 
   /// Position
   int get position => _position;
@@ -35,13 +34,22 @@ class MqttByteBuffer {
   /// Available bytes
   int get availableBytes => length - _position;
 
+  /// Skip bytes
+  set skipBytes(int bytes) => _position += bytes;
+
+  /// The byte buffer
+  MqttByteBuffer(this.buffer);
+
+  /// From a list
+  MqttByteBuffer.fromList(List<int> data) {
+    buffer = typed.Uint8Buffer();
+    buffer!.addAll(data);
+  }
+
   /// Resets the position to 0
   void reset() {
     _position = 0;
   }
-
-  /// Skip bytes
-  set skipBytes(int bytes) => _position += bytes;
 
   /// Add a list
   void addAll(List<int> data) {
@@ -50,7 +58,9 @@ class MqttByteBuffer {
 
   /// Shrink the buffer
   void shrink() {
-    buffer!.removeRange(0, _position);
+    _position < buffer!.length
+        ? buffer!.removeRange(0, _position)
+        : buffer!.clear();
     _position = 0;
   }
 
@@ -62,7 +72,7 @@ class MqttByteBuffer {
 
     // If we do not have 2 bytes we do not have a complete header, so no
     // message is available.
-    if (length < 2) {
+    if (length < MqttConstants.minHeaderLength) {
       return false;
     }
 
@@ -72,14 +82,16 @@ class MqttByteBuffer {
     // If the first byte of the header is 0 then skip past it.
     if (peekByte() == 0) {
       MqttLogger.log(
-          'MqttByteBuffer:isMessageAvailable - first header byte is zero, skipping');
+        'MqttByteBuffer:isMessageAvailable - first header byte is zero, skipping',
+      );
       _position++;
       shrink();
     }
 
     // Assume we now have a valid header
     MqttLogger.log(
-        'MqttByteBuffer:isMessageAvailable - assumed valid header, value is ${peekByte()}');
+      'MqttByteBuffer:isMessageAvailable - assumed valid header, value is ${peekByte()}',
+    );
     // Save the position
     var position = _position;
     var header = MqttHeader.fromByteBuffer(this);
@@ -88,8 +100,9 @@ class MqttByteBuffer {
     _position = position;
     if (avibytes < header.messageSize) {
       MqttLogger.log(
-          'MqttByteBuffer:isMessageAvailable - Available bytes($avibytes) is less than the message size'
-          ' ${header.messageSize}');
+        'MqttByteBuffer:isMessageAvailable - Available bytes($avibytes) is less than the message size'
+        ' ${header.messageSize}',
+      );
 
       return false;
     }
@@ -116,7 +129,7 @@ class MqttByteBuffer {
   int readShort() {
     final high = readByte();
     final low = readByte();
-    return (high << 8) + low;
+    return (high << byteLength) + low;
   }
 
   /// Reads a sequence of bytes from the current
@@ -124,16 +137,71 @@ class MqttByteBuffer {
   /// by the number of bytes read.
   typed.Uint8Buffer read(int count) {
     if ((length < count) || (_position + count) > length) {
-      throw Exception('MqttByteBuffer::read: The buffer did not have '
-          'enough bytes for the read operation '
-          'length $length, count $count, position $_position, buffer $buffer');
+      throw Exception(
+        'MqttByteBuffer::read: The buffer does not have '
+        'enough bytes for the read operation '
+        'length $length, count $count, position $_position, buffer $buffer',
+      );
     }
-    final tmp = typed.Uint8Buffer();
-    tmp.addAll(buffer!.getRange(_position, _position + count));
-    _position += count;
-    final tmp2 = typed.Uint8Buffer();
-    tmp2.addAll(tmp);
-    return tmp2;
+    if (MqttEnvironment.isWebClient) {
+      final tmp = typed.Uint8Buffer();
+      tmp.addAll(buffer!.getRange(_position, _position + count));
+      _position += count;
+      final tmp2 = typed.Uint8Buffer();
+      tmp2.addAll(tmp);
+      return tmp2;
+    } else {
+      _position += count;
+      return typed.Uint8Buffer()
+        ..addAll(buffer!.getRange(_position - count, _position));
+    }
+  }
+
+  /// Reads a sequence of bytes from the current
+  /// buffer and advances the position within the buffer
+  /// by the number of bytes read.
+  ///
+  /// Specifically intended for reading payload data from publish messages which can
+  /// be quite large.
+  typed.Uint8Buffer readPayload(int count) {
+    if ((length < count) || (_position + count) > length) {
+      throw Exception(
+        'mqtt_client::ByteBuffer::readPayload: The buffer does not have '
+        'enough bytes for the read operation '
+        'length $length, count $count, position $_position, buffer $buffer',
+      );
+    }
+    // If not a large payload use the normal buffer read method.
+    if (count <= largePayload) {
+      return read(count);
+    }
+    // See where the position is, if not 0 we can remove the range 0.._position
+    // as we know we are looking for a payload.
+    if (_position != 0) {
+      buffer!.removeRange(0, _position);
+      _position = 0;
+    }
+    // _position is now guaranteed to be 0 and at the start of the payload data.
+    // If the length of the buffer is equal to count then just return it.
+    final savedData = typed.Uint8Buffer();
+    if (buffer!.length == count) {
+      _position = buffer!.length;
+      return typed.Uint8Buffer()..addAll(buffer!);
+    } else {
+      // Trailing data, save it.
+      savedData.addAll(buffer!.getRange(_position + count, length).toList());
+      // Remove it, leaving just the payload
+      buffer!.removeRange(_position + count, length);
+      // Save the payload data
+      final tmp = typed.Uint8Buffer()..addAll(buffer!);
+      // Clear the buffer
+      buffer!.clear();
+      // Restore the trailing data and set the position to zero
+      buffer!.addAll(savedData);
+      _position = 0;
+      // Return the payload
+      return tmp;
+    }
   }
 
   /// Writes a byte to the current position in the buffer
@@ -149,8 +217,8 @@ class MqttByteBuffer {
 
   /// Write a short(16 bit)
   void writeShort(int short) {
-    writeByte(short >> 8);
-    writeByte(short & 0xFF);
+    writeByte(short >> byteLength);
+    writeByte(short & byteMask);
   }
 
   /// Writes a sequence of bytes to the current
@@ -168,11 +236,7 @@ class MqttByteBuffer {
   /// Seek. Sets the position in the buffer. If overflow occurs
   /// the position is set to the end of the buffer.
   void seek(int seek) {
-    if ((seek <= length) && (seek >= 0)) {
-      _position = seek;
-    } else {
-      _position = length;
-    }
+    _position = (seek <= length) && (seek >= 0) ? seek : length;
   }
 
   /// Writes an MQTT string member
@@ -184,7 +248,9 @@ class MqttByteBuffer {
   /// stringStream - The stream containing the string to write.
   /// stringToWrite - The string to write.
   static void writeMqttString(
-      MqttByteBuffer stringStream, String? stringToWrite) {
+    MqttByteBuffer stringStream,
+    String? stringToWrite,
+  ) {
     if (stringToWrite != null) {
       final enc = MqttUtf8Encoding();
       final stringBytes = enc.toUtf8(stringToWrite);
@@ -198,7 +264,7 @@ class MqttByteBuffer {
   /// Reads an MQTT string from the underlying stream.
   static String readMqttString(MqttByteBuffer buffer) {
     final enc = MqttUtf8Encoding();
-    final stringBuff = buffer.read(2);
+    final stringBuff = buffer.read(MqttConstants.minUTF8StringLength);
     final length = enc.length(stringBuff);
     stringBuff.addAll(buffer.read(length));
     return enc.fromUtf8(stringBuff);
@@ -208,7 +274,8 @@ class MqttByteBuffer {
   void clear() {
     if (_position != 0) {
       throw StateError(
-          'MqttByteBuffer::clear - attempt to clear a byte buffer where postion is not zero, it is $_position');
+        'MqttByteBuffer::clear - attempt to clear a byte buffer where postion is not zero, it is $_position',
+      );
     }
     buffer?.clear();
   }
@@ -221,10 +288,8 @@ class MqttByteBuffer {
 
   @override
   String toString() {
-    if (buffer == null || buffer!.isEmpty) {
-      return 'null or empty';
-    } else {
-      return buffer!.toList().toString();
-    }
+    return buffer == null || buffer!.isEmpty
+        ? 'null or empty'
+        : buffer!.toList().toString();
   }
 }

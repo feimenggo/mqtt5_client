@@ -50,7 +50,8 @@ void main() {
           connectionOK = true;
         } else {
           print(
-              'Browser client connection failed - disconnecting, status is ${client.connectionStatus}');
+            'Browser client connection failed - disconnecting, status is ${client.connectionStatus}',
+          );
           client.disconnect();
         }
         await sleeper.sleep();
@@ -62,7 +63,8 @@ void main() {
         }
       } on MqttNoConnectionException {
         print(
-            '>>>>> TEST NOT OK - No connection exception thrown, cannot connect to Mosquitto');
+          '>>>>> TEST NOT OK - No connection exception thrown, cannot connect to Mosquitto',
+        );
         ok = false;
       }
       expect(ok, isTrue);

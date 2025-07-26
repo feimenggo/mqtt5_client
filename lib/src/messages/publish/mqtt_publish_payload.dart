@@ -9,17 +9,6 @@ part of '../../../mqtt5_client.dart';
 
 /// Class that contains details related to an MQTT Publish message payload
 class MqttPublishPayload implements MqttIPayload {
-  /// Initializes a new instance of the MqttPublishPayload class.
-  MqttPublishPayload() {
-    message = typed.Uint8Buffer();
-  }
-
-  /// Initializes a new instance of the MqttPublishPayload class.
-  MqttPublishPayload.fromByteBuffer(
-      this.header, this.variableHeader, MqttByteBuffer payloadStream) {
-    readFrom(payloadStream);
-  }
-
   /// Receive length
   int length = 0;
 
@@ -32,11 +21,25 @@ class MqttPublishPayload implements MqttIPayload {
   /// The message that forms the payload of the publish message.
   typed.Uint8Buffer? message;
 
+  /// Initializes a new instance of the MqttPublishPayload class.
+  MqttPublishPayload() {
+    message = typed.Uint8Buffer();
+  }
+
+  /// Initializes a new instance of the MqttPublishPayload class.
+  MqttPublishPayload.fromByteBuffer(
+    this.header,
+    this.variableHeader,
+    MqttByteBuffer payloadStream,
+  ) {
+    readFrom(payloadStream);
+  }
+
   /// Creates a payload from the specified header stream.
   @override
   void readFrom(MqttByteBuffer payloadStream) {
     final messageBytes = header!.messageSize - variableHeader!.length;
-    message = payloadStream.read(messageBytes);
+    message = payloadStream.readPayload(messageBytes);
     length += messageBytes;
   }
 
@@ -53,4 +56,23 @@ class MqttPublishPayload implements MqttIPayload {
   @override
   String toString() =>
       'Payload: {${message!.length} bytes={${MqttUtilities.bytesToString(message!)}';
+
+  /// Converts an array of bytes to a byte string.
+  static String bytesToString(typed.Uint8Buffer? message) {
+    if (message == null) {
+      return '';
+    }
+    final sb = StringBuffer();
+    for (final b in message) {
+      sb.write('<');
+      sb.write(b);
+      sb.write('>');
+    }
+    return sb.toString();
+  }
+
+  /// Converts an array of bytes to a character string.
+  static String bytesToStringAsString(typed.Uint8Buffer message) {
+    return utf8.decode(message.toList());
+  }
 }

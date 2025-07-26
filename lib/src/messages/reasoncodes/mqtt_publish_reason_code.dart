@@ -22,7 +22,7 @@ enum MqttPublishReasonCode {
 
   /// The message is accepted but there are no subscribers.
   /// This is sent only by the broker If the broker knows that
-  /// there are no matching subscribers, it MAY use this reason dode instead
+  /// there are no matching subscribers, it MAY use this reason code instead
   /// of success.
   noMatchingSubscribers,
 
@@ -58,25 +58,25 @@ enum MqttPublishReasonCode {
 
   /// Not set indication, not part of the MQTT specification,
   /// used by the client to indicate a field has not yet been set.
-  notSet
+  notSet,
 }
 
 /// MQTT publish reason code support
 const Map<int, MqttPublishReasonCode> _mqttPublishReasonCodeValues =
     <int, MqttPublishReasonCode>{
-  0x00: MqttPublishReasonCode.success,
-  0x10: MqttPublishReasonCode.noMatchingSubscribers,
-  0x80: MqttPublishReasonCode.unspecifiedError,
-  0x83: MqttPublishReasonCode.implementationSpecificError,
-  0x87: MqttPublishReasonCode.notAuthorized,
-  0x90: MqttPublishReasonCode.topicNameInvalid,
-  0x91: MqttPublishReasonCode.packetIdentifierInUse,
-  0x92: MqttPublishReasonCode.packetIdentifierNotFound,
-  0x97: MqttPublishReasonCode.quotaExceeded,
-  0x99: MqttPublishReasonCode.payloadFormatInvalid,
-  0xff: MqttPublishReasonCode.notSet
-};
+      0x00: MqttPublishReasonCode.success,
+      0x10: MqttPublishReasonCode.noMatchingSubscribers,
+      0x80: MqttPublishReasonCode.unspecifiedError,
+      0x83: MqttPublishReasonCode.implementationSpecificError,
+      0x87: MqttPublishReasonCode.notAuthorized,
+      0x90: MqttPublishReasonCode.topicNameInvalid,
+      0x91: MqttPublishReasonCode.packetIdentifierInUse,
+      0x92: MqttPublishReasonCode.packetIdentifierNotFound,
+      0x97: MqttPublishReasonCode.quotaExceeded,
+      0x99: MqttPublishReasonCode.payloadFormatInvalid,
+      0xff: MqttPublishReasonCode.notSet,
+    };
 
 /// MQTT publish reason code helper
-MqttEnumHelper<MqttPublishReasonCode?> mqttPublishReasonCode =
+final MqttEnumHelper<MqttPublishReasonCode?> mqttPublishReasonCode =
     MqttEnumHelper<MqttPublishReasonCode?>(_mqttPublishReasonCodeValues);

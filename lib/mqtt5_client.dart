@@ -21,6 +21,8 @@ part 'src/mqtt_constants.dart';
 
 part 'src/mqtt_protocol.dart';
 
+part 'src/mqtt_environment.dart';
+
 part 'src/mqtt_event.dart';
 
 part 'src/exception/mqtt_identifier_exception.dart';
@@ -143,7 +145,7 @@ part 'src/messages/publishrelease/mqtt_publish_release_variable_header.dart';
 
 part 'src/messages/subscribe/mqtt_subscribe_variable_header.dart';
 
-part 'src/messages/subscribe/mqtt_subscribe_payload.dart';
+part 'src/messages/subscribe/mqtt_subscribe_payload_topic.dart';
 
 part 'src/messages/subscribe/mqtt_subscribe_message.dart';
 
@@ -199,7 +201,7 @@ part 'src/messages/properties/mqtt_variable_byte_integer_property.dart';
 
 part 'src/messages/properties/mqtt_user_property.dart';
 
-part 'src/messages/reasoncodes/mqtt_authentication_reason_code.dart';
+part 'src/messages/reasoncodes/mqtt_authenticate_reason_code.dart';
 
 part 'src/messages/reasoncodes/mqtt_connect_reason_code.dart';
 
