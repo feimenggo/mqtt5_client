@@ -1,3 +1,9 @@
+# 4.14.0
+- [PR 181](https://github.com/shamblett/mqtt5_client/pull/181)
+
+# 4.13.3
+- [Issue 179](https://github.com/shamblett/mqtt5_client/issues/179)
+
 # 4.13.2
 - [Issue 163](https://github.com/shamblett/mqtt5_client/issues/163)
 
