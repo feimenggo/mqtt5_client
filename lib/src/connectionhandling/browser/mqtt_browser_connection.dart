@@ -11,6 +11,7 @@ part of '../../../mqtt5_browser_client.dart';
 abstract class MqttBrowserConnection extends MqttConnectionBase {
   /// The socket that maintains the connection to the MQTT broker.
   /// Get and set methods preserve type information.
+  // ignore: avoid-casting-to-extension-type, casting fails at the JS layer
   WebSocket get wsClient => (client as WebSocket);
 
   /// Default constructor
@@ -125,7 +126,8 @@ abstract class MqttBrowserConnection extends MqttConnectionBase {
 
   /// Sends the message in the stream to the broker.
   void send(MqttByteBuffer message) {
-    final messageBytes = message.read(message.length);
+    final length = message.length;
+    final messageBytes = message.read(length);
     var buffer = messageBytes.buffer;
     var bData = ByteData.view(buffer);
     wsClient.send(bData.jsify()!);
