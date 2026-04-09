@@ -111,6 +111,7 @@ class MqttSubscriptionManager {
       subscription.maximumQos,
       userProperties: subscription.userProperties,
       option: subscription.option,
+      identifier: subscription.subscriptionIdentifier,
     );
   }
 
@@ -360,7 +361,7 @@ class MqttSubscriptionManager {
   }
 
   // Re subscribe.
-  // Takes all active completed subscriptions and re subscribes them if
+  // Takes all active completed and pending subscriptions and re subscribes them if
   // [resubscribeOnAutoReconnect] is true.
   // Automatically fired after auto reconnect has completed.
   void _resubscribe(MqttResubscribe resubscribeEvent) {
@@ -368,18 +369,35 @@ class MqttSubscriptionManager {
       MqttLogger.log(
         'MttSubscriptionManager::_resubscribe - resubscribing from auto reconnect ${resubscribeEvent.fromAutoReconnect}',
       );
-      for (final subscription in subscriptions.values) {
+      final subscriptionList = subscriptions.values.toList();
+      final pendingSubscriptionList = pendingSubscriptions.values.toList();
+      subscriptions.clear();
+      pendingSubscriptions.clear();
+
+      for (final subscription in subscriptionList) {
         _createNewSubscription(
           subscription.topic.rawTopic,
           subscription.maximumQos,
           userProperties: subscription.userProperties,
           option: subscription.option,
         );
+
+        for (final subscriptions in pendingSubscriptionList) {
+          for (final subscription in subscriptions) {
+            _createNewSubscription(
+              subscription.topic.rawTopic,
+              subscription.maximumQos,
+              userProperties: subscription.userProperties,
+              option: subscription.option,
+            );
+          }
+        }
       }
-      subscriptions.clear();
     } else {
+      subscriptions.clear();
+      pendingSubscriptions.clear();
       MqttLogger.log(
-        'MttSubscriptionManager::_resubscribe - '
+        'SubscriptionManager::_resubscribe - '
         'NOT resubscribing from auto reconnect ${resubscribeEvent.fromAutoReconnect}, resubscribeOnAutoReconnect is false',
       );
     }
@@ -392,6 +410,7 @@ class MqttSubscriptionManager {
     MqttQos? qos, {
     List<MqttUserProperty>? userProperties,
     MqttSubscriptionOption? option,
+    int? identifier,
   }) {
     try {
       final subscriptionTopic = MqttSubscriptionTopic(topic);
@@ -401,6 +420,9 @@ class MqttSubscriptionManager {
       }
       if (option != null) {
         sub.option = option;
+      }
+      if (identifier != null) {
+        sub.subscriptionIdentifier = identifier;
       }
       final msgId = messageIdentifierDispenser.nextMessageIdentifier;
       pendingSubscriptions[msgId] = <MqttSubscription>[sub];
@@ -413,6 +435,9 @@ class MqttSubscriptionManager {
                 .toTopicWithOption(sub.topic.rawTopic, option)
                 .withUserProperties(userProperties);
       msg.messageIdentifier = msgId;
+      if (identifier != null && identifier != 0) {
+        msg.variableHeader.subscriptionIdentifier = identifier;
+      }
       _connectionHandler.sendMessage(msg);
       return sub;
     } on Exception catch (e) {
